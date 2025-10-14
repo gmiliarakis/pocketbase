@@ -84,6 +84,13 @@ func New() *PocketBase {
 // Everything will be initialized when [PocketBase.Start] is executed.
 // If you want to initialize the application before calling [PocketBase.Start],
 // then you'll have to manually call [PocketBase.Bootstrap].
+// NewWithConfig creates a new PocketBase instance with the provided config.
+//
+// Note that the application will not be initialized/bootstrapped yet,
+// aka. DB connections, migrations, app settings, etc. will not be accessible.
+// Everything will be initialized when [PocketBase.Start] is executed.
+// If you want to initialize the application before calling [PocketBase.Start],
+// then you'll have to manually call [PocketBase.Bootstrap].
 func NewWithConfig(config Config) *PocketBase {
 	// initialize a default data directory based on the executable baseDir
 	if config.DefaultDataDir == "" {
@@ -119,14 +126,15 @@ func NewWithConfig(config Config) *PocketBase {
 	// replace with a colored stderr writer
 	pb.RootCmd.SetErr(newErrWriter())
 
-	// parse base flags
+	// MOVED: parse base flags FIRST before initializing the app
 	// (errors are ignored, since the full flags parsing happens on Execute())
 	pb.eagerParseFlags(&config)
 
-	// initialize the app instance
+	// MOVED: initialize the app instance AFTER parsing flags
+	// so that pb.dataDirFlag contains the correct value from command line
 	pb.App = core.NewBaseApp(core.BaseAppConfig{
 		IsDev:            pb.devFlag,
-		DataDir:          pb.dataDirFlag,
+		DataDir:          pb.dataDirFlag,    // This should now have the parsed flag value
 		EncryptionEnv:    pb.encryptionEnvFlag,
 		QueryTimeout:     time.Duration(pb.queryTimeout) * time.Second,
 		DataMaxOpenConns: config.DataMaxOpenConns,
