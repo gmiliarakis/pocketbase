@@ -296,6 +296,43 @@
                 return reloadLoadedPages();
             });
     }
+    async function downloadSelectedFiles() {
+        if (!totalBulkSelected || !collection?.id) return;
+
+        const fileField = "metadata"; // example: "attachment" or "image"
+        const baseUrl = ApiClient.baseUrl || window.location.origin;
+
+        const filesToDownload = [];
+
+        for (const record of Object.values(bulkSelected)) {
+            const fileNames = record[fileField];
+            if (!fileNames) continue;
+
+            // Handle both single and multiple file fields
+            const fileList = Array.isArray(fileNames) ? fileNames : [fileNames];
+            for (const name of fileList) {
+                const url = `${baseUrl}/api/files/${collection.id}/${record.id}/${name}`;
+                filesToDownload.push({ url, name });
+            }
+        }
+
+        if (!filesToDownload.length) {
+            addSuccessToast("No files found in selected records.");
+            return;
+        }
+
+        for (const file of filesToDownload) {
+            const a = document.createElement("a");
+            a.href = file.url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        addSuccessToast(`Started downloading ${filesToDownload.length} file(s).`);
+    }
+
 </script>
 
 <Scroller bind:this={scrollWrapper} class="table-wrapper">
@@ -478,6 +515,14 @@
             Selected <strong>{totalBulkSelected}</strong>
             {totalBulkSelected === 1 ? "record" : "records"}
         </div>
+        <button
+            type="button"
+            class="btn btn-sm btn-transparent btn-primary"
+            on:click={() => downloadSelectedFiles()}
+        >
+            <i class="ri-download-line" />
+            <span class="txt">Download files</span>
+        </button>
         <button
             type="button"
             class="btn btn-xs btn-transparent btn-outline p-l-5 p-r-5"
