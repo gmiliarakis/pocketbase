@@ -297,41 +297,42 @@
             });
     }
     async function downloadSelectedFiles() {
-        if (!totalBulkSelected || !collection?.id) return;
+    if (!totalBulkSelected || !collection?.id) return;
 
-        const fileField = "metadata"; // example: "attachment" or "image"
-        const baseUrl = ApiClient.baseUrl || window.location.origin;
+    const fileField = "metadata";
+    const baseUrl = ApiClient.baseUrl || window.location.origin;
+    const filesToDownload = [];
 
-        const filesToDownload = [];
+    for (const record of Object.values(bulkSelected)) {
+        const fileNames = record[fileField];
+        if (!fileNames) continue;
 
-        for (const record of Object.values(bulkSelected)) {
-            const fileNames = record[fileField];
-            if (!fileNames) continue;
-
-            // Handle both single and multiple file fields
-            const fileList = Array.isArray(fileNames) ? fileNames : [fileNames];
-            for (const name of fileList) {
-                const url = `${baseUrl}/api/files/${collection.id}/${record.id}/${name}`;
-                filesToDownload.push({ url, name });
-            }
+        const fileList = Array.isArray(fileNames) ? fileNames : [fileNames];
+        for (const name of fileList) {
+            const url = `${baseUrl}/api/files/${collection.id}/${record.id}/${name}`;
+            filesToDownload.push({ url, name });
         }
+    }
 
-        if (!filesToDownload.length) {
-            addSuccessToast("No files found in selected records.");
-            return;
-        }
+    if (!filesToDownload.length) {
+        addSuccessToast("No files found in selected records.");
+        return;
+    }
 
-        for (const file of filesToDownload) {
+    for (const [i, file] of filesToDownload.entries()) {
+        setTimeout(() => {
             const a = document.createElement("a");
             a.href = file.url;
             a.download = file.name;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-        }
-
-        addSuccessToast(`Started downloading ${filesToDownload.length} file(s).`);
+        }, i * 500); // half-second delay between each click
     }
+
+    addSuccessToast(`Started downloading ${filesToDownload.length} file(s).`);
+}
+
 
 </script>
 
